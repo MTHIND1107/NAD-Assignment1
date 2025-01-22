@@ -12,7 +12,6 @@
 #include "Net.h"
 
 //#define SHOW_ACKS
-//
 
 using namespace std;
 using namespace net;
@@ -130,13 +129,14 @@ int main(int argc, char* argv[])
 	Mode mode = Server;
 	Address address;
 
+	// Parse command-line arguments for client/server mode and additional parameters. 
 	if (argc >= 2)
 	{
 		int a, b, c, d;
-		#pragma warning(suppress : 4996)
+#pragma warning(suppress : 4996)
+		// Parse IP address from the first argument to set up the client mode.  
 		if (sscanf(argv[1], "%d.%d.%d.%d", &a, &b, &c, &d))
 		{
-			
 			mode = Client;
 			address = Address(a, b, c, d, ServerPort);
 		}
@@ -175,6 +175,7 @@ int main(int argc, char* argv[])
 	{
 		// update flow control
 
+		//Verify file integrity after receiving all chunks.
 		if (connection.IsConnected())
 			flowControl.Update(DeltaTime, connection.GetReliabilitySystem().GetRoundTripTime() * 1000.0f);
 
@@ -182,6 +183,8 @@ int main(int argc, char* argv[])
 
 		// detect changes in connection state
 
+		// Handle connection state changes for the server.
+        // Add logic to gracefully handle file transfers during connection interruptions.
 		if (mode == Server && connected && !connection.IsConnected())
 		{
 			flowControl.Reset();
@@ -205,21 +208,33 @@ int main(int argc, char* argv[])
 
 		sendAccumulator += DeltaTime;
 
+		// Break the file into chunks of size `PacketSize` and send each chunk.
 		while (sendAccumulator > 1.0f / sendRate)
 		{
+			// Prepare a packet for file transfer 
 			unsigned char packet[PacketSize];
 			memset(packet, 0, sizeof(packet));
 			connection.SendPacket(packet, sizeof(packet));
+
+			// Send the placeholder packet (later this will send metadata or file chunks)
 			sendAccumulator -= 1.0f / sendRate;
 		}
 
 		while (true)
 		{
+			    //1.Handle the first received packet as metadata containing file details (e.g., name, size).
+			    //2. If this is the first packet, treat it as metadata.
+				//3. Metadata processing: Extract file name and size to prepare for receiving file chunks.
+				//4. Example: Deserialize packet data to retrieve file name and size.
+
+			// Server-Side: Handle receiving file metadata and file chunks
 			unsigned char packet[256];
 			int bytes_read = connection.ReceivePacket(packet, sizeof(packet));
 			if (bytes_read == 0)
 				break;
 		}
+		// Write the received chunk to the output file.
+	   // Ensure that no data is lost or corrupted during the process.
 
 		// show packets that were acked this frame
 

@@ -1,3 +1,4 @@
+#pragma once
 /*
 	Simple Network Library from "Networking for Game Programmers"
 	http://www.gaffer.org/networking-for-game-programmers
@@ -8,15 +9,12 @@
 #define NET_H
 
 #include <cstring> // for memcpy
-//
 
 // platform detection
 
 #define PLATFORM_WINDOWS  1
 #define PLATFORM_MAC      2
 #define PLATFORM_UNIX     3
-
-const int PacketSizeHack = 128 + 256;
 
 #if defined(_WIN32)
 #define PLATFORM PLATFORM_WINDOWS
@@ -50,6 +48,8 @@ const int PacketSizeHack = 128 + 256;
 #include <list>
 #include <algorithm>
 #include <functional>
+
+const int PacketSizeHack = 384;
 
 namespace net
 {
@@ -273,15 +273,15 @@ namespace net
 			address.sin_addr.s_addr = htonl(destination.GetAddress());
 			address.sin_port = htons((unsigned short)destination.GetPort());
 
-			int sent_bytes = sendto(socket, (const char*)data, PacketSizeHack, 0, (sockaddr*)&address, sizeof(sockaddr_in));
+			int sent_bytes = sendto(socket, (const char*)data, size, 0, (sockaddr*)&address, sizeof(sockaddr_in));
 
 			return sent_bytes == size;
 		}
 
-		int Receive(Address& sender, void* data, int PacketSizeHack)
+		int Receive(Address& sender, void* data, int size)
 		{
 			assert(data);
-			assert(PacketSizeHack > 0);
+			assert(size > 0);
 
 			if (socket == 0)
 				return false;
@@ -293,7 +293,7 @@ namespace net
 			sockaddr_in from;
 			socklen_t fromLength = sizeof(from);
 
-			int received_bytes = recvfrom(socket, (char*)data, PacketSizeHack, 0, (sockaddr*)&from, &fromLength);
+			int received_bytes = recvfrom(socket, (char*)data, size, 0, (sockaddr*)&from, &fromLength);
 
 			if (received_bytes <= 0)
 				return 0;
@@ -441,28 +441,26 @@ namespace net
 			}
 		}
 
-		virtual bool SendPacket(const unsigned char data[], int PacketSizeHack)
+		virtual bool SendPacket(const unsigned char data[], int size)
 		{
 			assert(running);
 			if (address.GetAddress() == 0)
 				return false;
-			//unsigned char packet[PacketSizeHack + 4];
-			std::vector<unsigned char> packet(PacketSizeHack + 4);
+			unsigned char packet[PacketSizeHack + 4];
 			packet[0] = (unsigned char)(protocolId >> 24);
 			packet[1] = (unsigned char)((protocolId >> 16) & 0xFF);
 			packet[2] = (unsigned char)((protocolId >> 8) & 0xFF);
 			packet[3] = (unsigned char)((protocolId) & 0xFF);
-			std::memcpy(&packet[4], data, PacketSizeHack);
-			return socket.Send(address, &packet, PacketSizeHack + 4);
+			std::memcpy(&packet[4], data, size);
+			return socket.Send(address, packet, size + 4);
 		}
 
-		virtual int ReceivePacket(unsigned char data[], int PacketSizeHack)
+		virtual int ReceivePacket(unsigned char data[], int size)
 		{
 			assert(running);
-			//unsigned char packet[PacketSizeHack + 4];
-			std::vector<unsigned char> packet(PacketSizeHack + 4);
+			unsigned char packet[PacketSizeHack + 4];
 			Address sender;
-			int bytes_read = socket.Receive(sender, &packet, PacketSizeHack + 4);
+			int bytes_read = socket.Receive(sender, packet, size + 4);
 			if (bytes_read == 0)
 				return 0;
 			if (bytes_read <= 4)
@@ -543,7 +541,7 @@ namespace net
 	{
 		unsigned int sequence;			// packet sequence number
 		float time;					    // time offset since packet was sent or received (depending on context)
-		int PacketSizeHack;						// packet size in bytes
+		int size;						// packet size in bytes
 	};
 
 	inline bool sequence_more_recent(unsigned int s1, unsigned int s2, unsigned int max_sequence)
@@ -647,7 +645,7 @@ namespace net
 			rtt_maximum = 1.0f;
 		}
 
-		void PacketSent(int PacketSizeHack)
+		void PacketSent(int size)
 		{
 			if (sentQueue.exists(local_sequence))
 			{
@@ -660,7 +658,7 @@ namespace net
 			PacketData data;
 			data.sequence = local_sequence;
 			data.time = 0.0f;
-			data.PacketSizeHack = PacketSizeHack;
+			data.size = size;
 			sentQueue.push_back(data);
 			pendingAckQueue.push_back(data);
 			sent_packets++;
@@ -669,7 +667,7 @@ namespace net
 				local_sequence = 0;
 		}
 
-		void PacketReceived(unsigned int sequence, int PacketSizehack)
+		void PacketReceived(unsigned int sequence, int size)
 		{
 			recv_packets++;
 			if (receivedQueue.exists(sequence))
@@ -677,7 +675,7 @@ namespace net
 			PacketData data;
 			data.sequence = sequence;
 			data.time = 0.0f;
-			data.PacketSizeHack = PacketSizehack;
+			data.size = size;
 			receivedQueue.push_back(data);
 			if (sequence_more_recent(sequence, remote_sequence, max_sequence))
 				remote_sequence = sequence;
@@ -900,7 +898,7 @@ namespace net
 		{
 			int sent_bytes_per_second = 0;
 			for (PacketQueue::iterator itor = sentQueue.begin(); itor != sentQueue.end(); ++itor)
-				sent_bytes_per_second += itor->PacketSizeHack;
+				sent_bytes_per_second += itor->size;
 			int acked_packets_per_second = 0;
 			int acked_bytes_per_second = 0;
 			for (PacketQueue::iterator itor = ackedQueue.begin(); itor != ackedQueue.end(); ++itor)
@@ -908,7 +906,7 @@ namespace net
 				if (itor->time >= rtt_maximum)
 				{
 					acked_packets_per_second++;
-					acked_bytes_per_second += itor->PacketSizeHack;
+					acked_bytes_per_second += itor->size;
 				}
 			}
 			sent_bytes_per_second /= rtt_maximum;
