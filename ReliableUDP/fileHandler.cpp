@@ -5,6 +5,11 @@
 
 int loadFile(const char* filename, char** buffer, size_t* size)
 {
+    FILE* file = fopen(filename, "rb");
+    if (!file) {
+        perror("Error opening file");
+        return -1;
+    }
 
 }
 
