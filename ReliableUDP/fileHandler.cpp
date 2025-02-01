@@ -11,6 +11,10 @@ int loadFile(const char* filename, char** buffer, size_t* size)
         return -1;
     }
 
+    fseek(file, 0, SEEK_END); 
+    *size = ftell(file);  
+    fseek(file, 0, SEEK_SET); 
+
 }
 
 int saveFile(const char* filename, const char* buffer, size_t size) 
