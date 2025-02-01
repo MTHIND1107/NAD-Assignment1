@@ -2,9 +2,8 @@
 #define FILE_HANDLER_H
 #include <stdbool.h>
 
-int LoadFile(void);
-
-int SaveFile(void);
+int loadFile(const char* filename, char** buffer, size_t* size);
+int saveFile(const char* filename, const char* buffer, size_t size);
 
 int SendFile(void);
 
