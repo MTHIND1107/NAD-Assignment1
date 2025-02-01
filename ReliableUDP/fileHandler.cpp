@@ -23,6 +23,10 @@ int loadFile(const char* filename, char** buffer, size_t* size)
         return -1;
     }
 
+    fread(*buffer, 1, *size, file);  
+    fclose(file);  
+    return 0;  
+
 }
 
 int saveFile(const char* filename, const char* buffer, size_t size) 
