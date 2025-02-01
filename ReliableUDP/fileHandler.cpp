@@ -6,7 +6,8 @@
 int loadFile(const char* filename, char** buffer, size_t* size)
 {
     FILE* file = fopen(filename, "rb");
-    if (!file) {
+    if (!file) 
+    {
         perror("Error opening file");
         return -1;
     }
@@ -14,6 +15,13 @@ int loadFile(const char* filename, char** buffer, size_t* size)
     fseek(file, 0, SEEK_END); 
     *size = ftell(file);  
     fseek(file, 0, SEEK_SET); 
+
+    *buffer = (char*)malloc(*size);
+    if (!*buffer) 
+    {  
+        fclose(file); 
+        return -1;
+    }
 
 }
 
