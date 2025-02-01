@@ -3,11 +3,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-int LoadFile(void) {
+int loadFile(const char* filename, char** buffer, size_t* size)
+{
 
 }
 
-int SaveFile(void) {
+int saveFile(const char* filename, const char* buffer, size_t size) 
+{
 
 }
 
