@@ -32,14 +32,16 @@ int loadFile(const char* filename, char** buffer, size_t* size)
 
 int saveFile(const char* filename, const char* buffer, size_t size) 
 {
-    FILE* file = fopen(filename, "wb");  
-    if (!file) {
-        perror("Error opening file"); 
+    FILE* file = fopen(filename, "wb");   // Open file in binary write mode
+    if (!file) 
+    {
+        perror("Error opening file"); // Print error if file creation fails
         return -1;
     }
-    fwrite(buffer, 1, size, file);  
-    fclose(file);  
-    return 0;  
+
+    fwrite(buffer, 1, size, file);   // Write buffer contents to the file
+    fclose(file);  // Close the file after writing
+    return 0;    // Return success
 }
 
 int SendFile(void) {
