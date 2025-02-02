@@ -32,6 +32,11 @@ int loadFile(const char* filename, char** buffer, size_t* size)
 
 int saveFile(const char* filename, const char* buffer, size_t size) 
 {
+    FILE* file = fopen(filename, "wb");  
+    if (!file) {
+        perror("Error opening file"); 
+        return -1;
+    }
 
 }
 
