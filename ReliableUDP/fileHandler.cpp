@@ -37,7 +37,9 @@ int saveFile(const char* filename, const char* buffer, size_t size)
         perror("Error opening file"); 
         return -1;
     }
-
+    fwrite(buffer, 1, size, file);  
+    fclose(file);  
+    return 0;  
 }
 
 int SendFile(void) {
