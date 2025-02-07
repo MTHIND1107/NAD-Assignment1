@@ -135,7 +135,7 @@ int main(int argc, char* argv[])
 		int a, b, c, d;
 #pragma warning(suppress : 4996)
 		// Parse IP address from the first argument to set up the client mode.  
-		if (sscanf(argv[1], "%d.%d.%d.%d", &a, &b, &c, &d))
+		if (sscanf_s(argv[1], "%d.%d.%d.%d", &a, &b, &c, &d))
 		{
 			mode = Client;
 			address = Address(a, b, c, d, ServerPort);
