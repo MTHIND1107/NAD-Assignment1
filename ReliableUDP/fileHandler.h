@@ -8,6 +8,7 @@
 
 int loadFile(const char* filename, char** buffer, size_t* size);
 int saveFile(const char* filename, const char* buffer, size_t size);
+double calculateTransferSpeed(double startTime, double endTime, size_t fileSize);
 
 int SendFile(const char* filename, const char* destIP, int destPort);
 

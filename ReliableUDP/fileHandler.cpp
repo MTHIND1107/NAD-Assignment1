@@ -87,6 +87,16 @@ int saveFile(const char* filename, const char* buffer, size_t size)
     fclose(file);  // Close the file after writing
     return 0;    // Return success
 }
+
+// Calculate transfer speed in Mbps
+double calculateTransferSpeed(double startTime, double endTime, size_t fileSize) 
+{
+    double duration = endTime - startTime;
+    if (duration <= 0) return 0.0; // Prevent division by zero
+
+    return (fileSize * 8.0) / (duration * 1e6); // Convert to Mbps
+}
+
 /*
 * Function Name: SendFile
 * Parameters: filename(name of the file to be sent), destIP(IP where the file is to be sent),
