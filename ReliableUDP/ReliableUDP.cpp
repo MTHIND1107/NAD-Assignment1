@@ -9,6 +9,8 @@
 #include <string>
 #include <vector>
 
+#include "fileHandler.h"
+#include "fileHandler.c"
 #include "Net.h"
 
 //#define SHOW_ACKS
@@ -114,6 +116,10 @@ private:
 	float penalty_reduction_accumulator;
 };
 
+int SendFile(const char* filename, const char* destIP, int destPort);
+int ReceiveFile(void);
+
+
 // ----------------------------------------------
 
 int main(int argc, char* argv[])
@@ -128,6 +134,24 @@ int main(int argc, char* argv[])
 
 	Mode mode = Server;
 	Address address;
+	//Tracks the file transfer states
+	enum TransferState {
+		IDLE,
+		sendingMetadata,
+		sendingFile,
+		receivingMetadata,
+		receivingFile,
+		completed
+	} transferState = IDLE;
+
+	//Variables used in sending and receiving 
+	char* fileBuffer = nullptr;
+	size_t fileSize = 0;
+	size_t currentOffset = 0;
+	FileMetadata metadata;
+	char tempBuffer[PacketSize];
+
+
 
 	// Parse command-line arguments for client/server mode and additional parameters. 
 	if (argc >= 2)
@@ -212,13 +236,31 @@ int main(int argc, char* argv[])
 		// Break the file into chunks of size `PacketSize` and send each chunk.
 		while (sendAccumulator > 1.0f / sendRate)
 		{
-			// Prepare a packet for file transfer 
-			unsigned char packet[PacketSize];
-			memset(packet, 0, sizeof(packet));
-			connection.SendPacket(packet, sizeof(packet));
+			if (mode == Client && connected) {
+				switch (transferState) {
+				case sendingMetadata:
+					connection.SendPacket((unsigned char*)tempBuffer, sizeof(FileMetadata));
+					transferState = sendingFile;
+					break;
 
-			// Send the placeholder packet (later this will send metadata or file chunks)
-			sendAccumulator -= 1.0f / sendRate;
+				case sendingFile:
+					if (currentOffset < fileSize) {
+						size_t packetSize = createDataPacket(fileBuffer, fileSize, currentOffset, tempBuffer, PacketSize, (currentOffset + PacketSize >= fileSize));
+						connection.SendPacket((unsigned char*)tempBuffer, packetSize);
+						currentOffset += packetSize;
+
+						if (currentOffset >= fileSize) {
+							stopTransferTimer();
+							double speed = calculateTransferSpeed(fileSize);
+							printf("Transfer completed\n");
+							printf("File size: %zu bytes\n", fileSize);
+							printf("Transfer speed: %.2f Mbps\n", speed);
+							transferState = completed;
+						}
+					}
+					break;
+				}
+			}
 		}
 
 		while (true)
