@@ -126,6 +126,14 @@ bool extractMetadataPacket(const char* packet, FileMetadata* metadata) {
     memcpy(metadata, packet, sizeof(FileMetadata));
     return true;
 }
+// Function to create a data packet
+size_t createDataPacket(const char* fileBuffer, size_t fileSize, size_t currentOffset, char* tempBuffer, size_t maxPacketSize, bool isLastPacket) {
+    size_t remainingSize = fileSize - currentOffset;
+    size_t packetSize = (remainingSize < maxPacketSize) ? remainingSize : maxPacketSize;
+
+    memcpy(tempBuffer, fileBuffer + currentOffset, packetSize);
+    return packetSize;  // Return the actual packet size
+}
 
 
 bool VerifyFile(const char* filename, uint32_t expectedCRC) {
