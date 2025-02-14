@@ -128,7 +128,14 @@ bool extractMetadataPacket(const char* packet, FileMetadata* metadata) {
 }
 
 
+bool VerifyFile(const char* filename, uint32_t expectedCRC) {
+        char* buffer;
+        size_t fileSize;
+        if (loadFile(filename, &buffer, &fileSize) < 0) return false;
 
-int VerifyFile(void) {
-    return 0;
+        uint32_t computedCRC = computeCRC32(buffer, fileSize);
+        free(buffer);
+
+        return computedCRC == expectedCRC;
+    
 }
