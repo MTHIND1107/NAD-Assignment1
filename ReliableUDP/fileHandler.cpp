@@ -33,12 +33,15 @@ void init_crc32_table(void) {
 * Returns: uint32_t
 * Description: compute the CRC32 using table
 */
-uint32_t compute_crc32(const uint8_t* data, size_t length) {
-    uint32_t crc = ~0;  // Start with all bits set (0xFFFFFFFF)
-    for (size_t i = 0; i < length; i++) {
-        crc = (crc >> 8) ^ crc32_table[(crc ^ data[i]) & 0xFF];
+uint32_t computeCRC32(const char* data, size_t size) {
+    uint32_t crc = 0xFFFFFFFF;
+    for (size_t i = 0; i < size; ++i) {
+        crc ^= (uint8_t)data[i];
+        for (int j = 0; j < 8; ++j) {
+            crc = (crc >> 1) ^ (0xEDB88320 * (crc & 1));
+        }
     }
-    return ~crc;  // Final XOR with 0xFFFFFFFF
+    return ~crc;
 }
 
 int loadFile(const char* filename, char** buffer, size_t* size)
@@ -99,6 +102,12 @@ int SendFile(const char* filename, const char* destIP, int destPort) {
     if (loadFile(filename, &buffer, &fileSize) < 0) { //call the function loadFile to get the contents in buffer and file size.
         return -1;
     }
+    //CRC32 checksum
+    uint32_t checksum = compute_crc32((uint8_t*)buffer, fileSize);
+    ReliableUDP sender(destIP, destPort);
+
+    
+
     
 }
 

@@ -185,6 +185,7 @@ int main(int argc, char* argv[])
 
 		// Handle connection state changes for the server.
         // Add logic to gracefully handle file transfers during connection interruptions.
+
 		if (mode == Server && connected && !connection.IsConnected())
 		{
 			flowControl.Reset();
@@ -277,7 +278,7 @@ int main(int argc, char* argv[])
 
 			statsAccumulator -= 0.25f;
 		}
-
+		//SOMEWHERE HERE TO USE AND DISPLAY THE TIME FUNCTION
 		net::wait(DeltaTime);
 	}
 
