@@ -10,7 +10,7 @@
 #include <vector>
 
 #include "fileHandler.h"
-#include "fileHandler.c"
+#include "fileHandler.cpp"
 #include "Net.h"
 
 //#define SHOW_ACKS
