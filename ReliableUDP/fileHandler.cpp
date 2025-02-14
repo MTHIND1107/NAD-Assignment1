@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdint.h>
+#include <chrono>
 #pragma warning(disable: 4996)
 
 
@@ -46,28 +47,28 @@ uint32_t computeCRC32(const char* data, size_t size) {
 
 int loadFile(const char* filename, char** buffer, size_t* size)
 {
-    FILE* file = fopen(filename, "rb");// Open the file in binary read mode
+    FILE* file = fopen(filename, "rb");
     if (!file) 
     {
-        perror("Error opening file");// Print error message if the file cannot be opened
+        perror("Error opening file");
         return -1;
     }
 
-    fseek(file, 0, SEEK_END);  // Move the file pointer to the end to determine file size
-    *size = ftell(file);   // Get the file size in bytes
+    fseek(file, 0, SEEK_END);
+    *size = ftell(file);  
     fseek(file, 0, SEEK_SET); // Move the file pointer back to the beginning
 
 
     *buffer = (char*)malloc(*size);
-    if (!*buffer) // Check if memory allocation was successful
+    if (!*buffer) 
     {  
-        fclose(file); // Close the file before returning an error
+        fclose(file);
         return -1;
     }
 
-    fread(*buffer, 1, *size, file);  // Read file contents into the allocated buffer
-    fclose(file);  // Read file contents into the allocated buffer
-    return 0;   // Return success
+    fread(*buffer, 1, *size, file);  // Read file
+    fclose(file); 
+    return 0;
 
 }
 
@@ -86,9 +87,9 @@ int saveFile(const char* filename, const char* buffer, size_t size)
         return -1;
     }
 
-    fwrite(buffer, 1, size, file);   // Write buffer contents to the file
+    size_t written = fwrite(buffer, 1, size, file);
     fclose(file);  // Close the file after writing
-    return 0;    // Return success
+    return (written == size) ? 0 : -1;
 }
 
 // Calculate transfer speed in Mbps
@@ -99,31 +100,34 @@ double calculateTransferSpeed(double startTime, double endTime, size_t fileSize)
 
     return (fileSize * 8.0) / (duration * 1e6); // Convert to Mbps
 }
-
-/*
-* Function Name: SendFile
-* Parameters: filename(name of the file to be sent), destIP(IP where the file is to be sent),
-*             destPort(Port where the file is sent for communication),
-* 
-*/
-int SendFile(const char* filename, const char* destIP, int destPort) { 
-    char* buffer;
+struct FileMetadata {
+    char filename[256];
     size_t fileSize;
-    if (loadFile(filename, &buffer, &fileSize) < 0) { //call the function loadFile to get the contents in buffer and file size.
-        return -1;
+    uint32_t crc;
+    bool isLastPacket;
+};
+
+//Creating a metadata packet
+void createMetadataPacket(const char* filename, size_t fileSize, uint32_t crc, char* packet, size_t* packetSize) {
+    FileMetadata metadata;
+    strncpy(metadata.filename, filename, sizeof(metadata.filename) - 1);
+    metadata.fileSize = fileSize;
+    metadata.crc = crc;
+    metadata.isLastPacket = false;
+
+    memcpy(packet, &metadata, sizeof(FileMetadata));
+    *packetSize = sizeof(FileMetadata);
+}
+//Get the metadata packet
+bool extractMetadataPacket(const char* packet, FileMetadata* metadata) {
+    if (!packet || !metadata) {
+        return false;
     }
-    //CRC32 checksum
-    uint32_t checksum = compute_crc32((uint8_t*)buffer, fileSize);
-    ReliableUDP sender(destIP, destPort);
-
-    
-
-    
+    memcpy(metadata, packet, sizeof(FileMetadata));
+    return true;
 }
 
-int ReceiveFile(void) {
-    return 0;
-}
+
 
 int VerifyFile(void) {
     return 0;
