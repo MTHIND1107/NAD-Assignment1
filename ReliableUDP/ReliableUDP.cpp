@@ -235,6 +235,7 @@ int main(int argc, char* argv[])
 		// Break the file into chunks of size `PacketSize` and send each chunk.
 		while (sendAccumulator > 1.0f / sendRate)
 		{
+			printf("DBVFJBVGERUNVUSDNCIUBSRUBGVSNJNR\n"); 
 			if (mode == Client && connected) {
 				switch (transferState) {
 				case sendingMetadata:
