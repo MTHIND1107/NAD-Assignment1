@@ -237,7 +237,20 @@ int main(int argc, char* argv[])
 			printf("connection failed\n");
 			break;
 		}
+		if (mode == Client) {
+			static int lastState = -1;
+			int currentState = 0;
+			currentState |= connection.IsConnected() ? 1 : 0;
+			currentState |= connection.ConnectFailed() ? 2 : 0;
 
+			if (currentState != lastState) {
+				printf("Connection state changed:\n");
+				printf("IsConnected: %s\n", connection.IsConnected() ? "true" : "false");
+				printf("ConnectFailed: %s\n", connection.ConnectFailed() ? "true" : "false");
+				printf("Connected flag: %s\n", connected ? "true" : "false");
+				lastState = currentState;
+			}
+		}
 		// send and receive packets
 
 		sendAccumulator += DeltaTime;
