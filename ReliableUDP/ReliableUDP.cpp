@@ -8,6 +8,7 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <ctime>
 
 #include "fileHandler.h"
 #include "fileHandler.cpp"
@@ -116,8 +117,7 @@ private:
 	float penalty_reduction_accumulator;
 };
 
-int SendFile(const char* filename, const char* destIP, int destPort);
-int ReceiveFile(void);
+
 
 
 // ----------------------------------------------
@@ -194,7 +194,7 @@ int main(int argc, char* argv[])
 	float statsAccumulator = 0.0f;
 
 	FlowControl flowControl;
-
+	clock_t transfer_start, transfer_end;
 	while (true)
 	{
 		// update flow control
@@ -239,7 +239,10 @@ int main(int argc, char* argv[])
 			if (mode == Client && connected) {
 				switch (transferState) {
 				case sendingMetadata:
-					connection.SendPacket((unsigned char*)tempBuffer, sizeof(FileMetadata));
+					transfer_start = clock();
+					size_t packetSize;
+					createMetadataPacket(argv[2], fileSize, computeCRC32(fileBuffer, fileSize), false, tempBuffer, &packetSize);
+					connection.SendPacket((unsigned char*)tempBuffer, packetSize);
 					transferState = sendingFile;
 					break;
 
@@ -248,12 +251,13 @@ int main(int argc, char* argv[])
 						size_t packetSize = createDataPacket(fileBuffer, fileSize, currentOffset, tempBuffer, PacketSize, (currentOffset + PacketSize >= fileSize));
 						connection.SendPacket((unsigned char*)tempBuffer, packetSize);
 						currentOffset += packetSize;
-
 						if (currentOffset >= fileSize) {
-							stopTransferTimer(); //TransferTimer issue while stopping
-							double speed = calculateTransferSpeed(fileSize);
+							transfer_end = clock();
+							double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
+							double speed = calculateTransferSpeed(0, duration, fileSize);
 							printf("Transfer completed\n");
 							printf("File size: %zu bytes\n", fileSize);
+							printf("Time taken: %.2f seconds\n", duration);
 							printf("Transfer speed: %.2f Mbps\n", speed);
 							transferState = completed;
 						}
@@ -275,18 +279,18 @@ int main(int argc, char* argv[])
 
 			// Server-Side: Handle receiving file metadata and file chunks
 			unsigned char packet[256];
-			int bytes_read = connection.ReceivePacket(packet, sizeof(packet));
-			if (bytes_read == 0)
+			int bytesRead = connection.ReceivePacket(packet, sizeof(packet));
+			if (bytesRead == 0)
 				break;
-			if (mode == Server){
+			if (mode == Server) {
 				switch (transferState) {
 				case idle:
 				case receivingMetadata:
 					if (extractMetadataPacket((char*)packet, &metadata)) {
+						transfer_start = clock();
 						fileBuffer = (char*)malloc(metadata.fileSize);
 						currentOffset = 0;
 						transferState = receivingFile;
-						startTransferTimer();
 						printf("Receiving file: %s (Size: %zu bytes)\n", metadata.filename, metadata.fileSize);
 					}
 					break;
@@ -296,16 +300,19 @@ int main(int argc, char* argv[])
 						currentOffset += bytesRead;
 
 						if (currentOffset >= metadata.fileSize) {
-							stopTransferTimer();
+							transfer_end = clock();
+							double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
+							double speed = calculateTransferSpeed(0, duration, metadata.fileSize);
 							uint32_t receivedCRC = computeCRC32(fileBuffer, metadata.fileSize);
 
 							if (receivedCRC == metadata.crc) {
 								char savePath[512];
 								snprintf(savePath, sizeof(savePath), "received_%s", metadata.filename);
 								if (saveFile(savePath, fileBuffer, metadata.fileSize) == 0) {
-									double speed = calculateTransferSpeed(metadata.fileSize);
+									double speed = calculateTransferSpeed(transfer_start, transfer_end, fileSize);
 									printf("File received successfully\n");
 									printf("Saved as: %s\n", savePath);
+									printf("File received in %.2f seconds\n", duration);
 									printf("Transfer speed: %.2f Mbps\n", speed);
 									printf("CRC verification: PASSED\n");
 								}
@@ -324,6 +331,7 @@ int main(int argc, char* argv[])
 				default:
 					break;
 				}
+			}
 		}
 		// Write the received chunk to the output file.
 	   // Ensure that no data is lost or corrupted during the process.
@@ -372,7 +380,9 @@ int main(int argc, char* argv[])
 		//SOMEWHERE HERE TO USE AND DISPLAY THE TIME FUNCTION
 		net::wait(DeltaTime);
 	}
-
+	if (fileBuffer) {
+		free(fileBuffer);
+	}
 	ShutdownSockets();
 
 	return 0;
