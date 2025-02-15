@@ -203,7 +203,7 @@ int main(int argc, char* argv[])
 	float statsAccumulator = 0.0f;
 
 	FlowControl flowControl;
-	clock_t transfer_start, transfer_end;
+	clock_t transfer_start = clock(), transfer_end = clock();
 	while (true)
 	{
 		// update flow control
@@ -248,7 +248,7 @@ int main(int argc, char* argv[])
 		// Break the file into chunks of size `PacketSize` and send each chunk.
 		while (sendAccumulator > 1.0f / sendRate)
 		{
-			if (mode == Client && connected) {
+			if (mode == Client) {
 
 				switch (transferState) {
 				case idle:
@@ -269,6 +269,11 @@ int main(int argc, char* argv[])
 						*/
 						size_t remainingSize = fileSize - currentOffset;
 						size_t chunkSize = (remainingSize < (size_t)PacketSize) ? remainingSize : (size_t)PacketSize;
+
+						if (chunkSize > PacketSize) {
+							chunkSize = PacketSize;
+						}
+
 						memcpy(tempBuffer, fileBuffer + currentOffset, chunkSize);
 						connection.SendPacket((unsigned char*)tempBuffer, chunkSize);
 						currentOffset += chunkSize;
