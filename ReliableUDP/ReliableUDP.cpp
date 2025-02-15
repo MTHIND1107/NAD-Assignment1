@@ -135,13 +135,13 @@ int main(int argc, char* argv[])
 	Address address;
 	//Tracks the file transfer states
 	enum TransferState {
-		
+		idle,
 		sendingMetadata,
 		sendingFile,
 		receivingMetadata,
 		receivingFile,
 		completed
-	} transferState;
+	} transferState = idle;
 
 	//Variables used in sending and receiving 
 	char* fileBuffer = nullptr;
@@ -261,6 +261,7 @@ int main(int argc, char* argv[])
 			 
 			
 			switch (transferState) {
+			case idle:
 			case sendingMetadata:
 				transfer_start = clock();
 				size_t packetSize;
