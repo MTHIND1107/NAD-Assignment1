@@ -166,7 +166,16 @@ int main(int argc, char* argv[])
 	}
 
 	// initialize
-
+	if (mode == Client && argc >= 3) {  // Make sure we have a filename argument
+		if (loadFile(argv[2], &fileBuffer, &fileSize) == 0) {
+			printf("File loaded successfully: %s (%zu bytes)\n", argv[2], fileSize);
+			transferState = sendingMetadata;  // Set initial state for sending
+		}
+		else {
+			printf("Failed to load file: %s\n", argv[2]);
+			return 1;
+		}
+	}
 	if (!InitializeSockets())
 	{
 		printf("failed to initialize sockets\n");
@@ -220,16 +229,7 @@ int main(int argc, char* argv[])
 		{
 			printf("client connected to server\n");
 			connected = true;
-			if (mode == Client && argc >= 3) {  // Make sure we have a filename argument
-				if (loadFile(argv[2], &fileBuffer, &fileSize) == 0) {
-					printf("File loaded successfully: %s (%zu bytes)\n", argv[2], fileSize);
-					transferState = sendingMetadata;  // Set initial state for sending
-				}
-				else {
-					printf("Failed to load file: %s\n", argv[2]);
-					break;
-				}
-			}
+			
 		}
 
 		if (!connected && connection.ConnectFailed())
