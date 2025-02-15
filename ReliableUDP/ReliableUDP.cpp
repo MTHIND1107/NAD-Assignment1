@@ -194,8 +194,11 @@ int main(int argc, char* argv[])
 
 	if (mode == Client)
 		connection.Connect(address);
-	else
+	else {
+		printf("Server starting on port %d...\n", ServerPort);
 		connection.Listen();
+		printf("Server listening for connections...\n");
+	}
 
 	bool connected = false;
 	float sendAccumulator = 0.0f;
