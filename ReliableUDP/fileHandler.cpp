@@ -115,23 +115,42 @@ double calculateTransferSpeed(double startTime, double endTime, size_t fileSize)
 }
 
 //Creating a metadata packet
-void createMetadataPacket(const char* filename, size_t fileSize, uint32_t crc, bool isLast, char* packet, size_t* packetSize) {
+void createMetadataPacket(const char* filename, size_t fileSize, uint32_t crc, bool isLast, char* packet, size_t* packetSize, size_t offset) {
     FileMetadata metadata;
     strncpy(metadata.filename, filename, sizeof(metadata.filename) - 1);
     metadata.fileSize = fileSize;
     metadata.crc = crc;
     metadata.isLastPacket = isLast;
 
-    memcpy(packet, &metadata, sizeof(FileMetadata));
-    *packetSize = sizeof(FileMetadata);
+    size_t totalMetadataSize = sizeof(FileMetadata);
+
+    // Calculate remaining size to send
+    size_t remainingSize = totalMetadataSize - offset;
+
+    // Determine chunk size (must fit in `PacketSize`)
+    size_t chunkSize = (remainingSize < 256) ? remainingSize : 256; ///REMOVE THE HARD CODED VLAUE
+
+    // Copy only the chunked portion into the packet
+    memcpy(packet, ((char*)&metadata) + offset, chunkSize);
+
+    // Set packet size
+    *packetSize = chunkSize;
 }
 //Get the metadata packet
-bool extractMetadataPacket(const char* packet, FileMetadata* metadata) {
-    if (!packet || !metadata) {
+bool extractMetadataPacket(const char* packet, size_t bytesRead, FileMetadata* metadata, char* metadataBuffer, size_t* receivedMetaOffset) {
+    if (!packet || !metadata || !metadataBuffer || !receivedMetaOffset) {
         return false;
     }
-    memcpy(metadata, packet, sizeof(FileMetadata));
-    return true;
+    memcpy(metadataBuffer + *receivedMetaOffset, packet, bytesRead);
+    *receivedMetaOffset += bytesRead;
+
+    // Check if we have received the full metadata structure
+    if (*receivedMetaOffset >= sizeof(FileMetadata)) {
+        memcpy(metadata, metadataBuffer, sizeof(FileMetadata)); // Copy full metadata
+        *receivedMetaOffset = 0; // Reset for next file transfer
+        return true; // Metadata fully received
+    }
+    return false;
 }
 // Function to create a data packet
 size_t createDataPacket(const char* fileBuffer, size_t fileSize, size_t currentOffset, char* tempBuffer, size_t maxPacketSize, bool isLastPacket) {

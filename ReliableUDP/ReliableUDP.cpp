@@ -248,15 +248,21 @@ int main(int argc, char* argv[])
 		// Break the file into chunks of size `PacketSize` and send each chunk.
 		while (sendAccumulator > 1.0f / sendRate)
 		{
-			if (mode == Client) {
+			if (mode == Client ) {
 
 				switch (transferState) {
 				case idle:
 				case sendingMetadata:
 					
-					size_t packetSize;
-					createMetadataPacket(argv[2], fileSize, computeCRC32(fileBuffer, fileSize), false, tempBuffer, &packetSize);
-					connection.SendPacket((unsigned char*)tempBuffer, packetSize);
+					
+					size_t totalMetadataSize = sizeof(FileMetadata);
+					size_t currentMetaOffset = 0;
+					while (currentMetaOffset < totalMetadataSize) {
+						size_t packetSize;
+						createMetadataPacket(argv[2], fileSize, computeCRC32(fileBuffer, fileSize), false, tempBuffer, &packetSize, currentMetaOffset);
+						connection.SendPacket((unsigned char*)tempBuffer, packetSize);
+						currentMetaOffset += packetSize;
+					}
 					printf("Sent metadata for file: %s\n", argv[2]);
 					transferState = sendingFile;
 					break;
@@ -316,17 +322,20 @@ int main(int argc, char* argv[])
 				switch (transferState) {
 				
 				case receivingMetadata:
-					if (extractMetadataPacket((char*)packet, &metadata)) {
+					static char metadataBuffer[sizeof(FileMetadata)];
+					static size_t receivedMetaOffset = 0;
+
+					if (extractMetadataPacket((char*)packet, bytesRead, &metadata, metadataBuffer, &receivedMetaOffset)) {
 						printf("Receiving file: %s (Size: %zu bytes)\n", metadata.filename, metadata.fileSize);
+
 						fileBuffer = (char*)malloc(metadata.fileSize);
 						if (!fileBuffer) {
 							printf("Failed to allocate memory for file\n");
 							return 1;
 						}
+
 						currentOffset = 0;
 						transferState = receivingFile;
-						transfer_start = clock();
-						//printf("Receiving file: %s (Size: %zu bytes)\n", metadata.filename, metadata.fileSize);
 					}
 					break;
 				case receivingFile:

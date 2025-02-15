@@ -28,8 +28,8 @@ uint32_t computeCRC32(const char* data, size_t size);
 int loadFile(const char* filename, char** buffer, size_t* size);
 int saveFile(const char* filename, const char* buffer, size_t size);
 double calculateTransferSpeed(double startTime, double endTime, size_t fileSize);
-void createMetadataPacket(const char* filename, size_t fileSize, uint32_t crc, bool isLast, char* packet, size_t* packetSize);
-bool extractMetadataPacket(const char* packet, FileMetadata* metadata);
+void createMetadataPacket(const char* filename, size_t fileSize, uint32_t crc, bool isLast, char* packet, size_t* packetSize, size_t offset);
+bool extractMetadataPacket(const char* packet, size_t bytesRead, FileMetadata* metadata, char* metadataBuffer, size_t* receivedMetaOffset);
 size_t createDataPacket(const char* fileBuffer, size_t fileSize, size_t currentOffset, char* tempBuffer, size_t maxPacketSize, bool isLastPacket);
 
 bool VerifyFile(const char* filename, uint32_t expectedCRC);
