@@ -220,6 +220,16 @@ int main(int argc, char* argv[])
 		{
 			printf("client connected to server\n");
 			connected = true;
+			if (mode == Client && argc >= 3) {  // Make sure we have a filename argument
+				if (loadFile(argv[2], &fileBuffer, &fileSize) == 0) {
+					printf("File loaded successfully: %s (%zu bytes)\n", argv[2], fileSize);
+					transferState = sendingMetadata;  // Set initial state for sending
+				}
+				else {
+					printf("Failed to load file: %s\n", argv[2]);
+					break;
+				}
+			}
 		}
 
 		if (!connected && connection.ConnectFailed())
@@ -235,7 +245,7 @@ int main(int argc, char* argv[])
 		// Break the file into chunks of size `PacketSize` and send each chunk.
 		while (sendAccumulator > 1.0f / sendRate)
 		{
-			printf("DBVFJBVGERUNVUSDNCIUBSRUBGVSNJNR\n"); 
+			 
 			if (mode == Client && connected) {
 				switch (transferState) {
 				case sendingMetadata:
