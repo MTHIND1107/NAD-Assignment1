@@ -258,7 +258,7 @@ int main(int argc, char* argv[])
 		// Break the file into chunks of size `PacketSize` and send each chunk.
 		while (sendAccumulator > 1.0f / sendRate)
 		{
-			if (mode == Server) {
+			if (mode == Client) {
 
 				switch (transferState) {
 				case idle:
