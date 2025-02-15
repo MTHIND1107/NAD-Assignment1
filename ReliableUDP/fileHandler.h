@@ -16,6 +16,13 @@
 #define PACKET_SIZE 1024
 #define CHECKSUM_SIZE 4  // CRC32 checksum size
 
+typedef struct {
+    char filename[256];  // Adjust size as needed
+    size_t fileSize;
+    uint32_t crc;
+    bool isLast;
+} FileMetadata;
+
 void init_crc32_table(void);
 uint32_t computeCRC32(const char* data, size_t size);
 int loadFile(const char* filename, char** buffer, size_t* size);

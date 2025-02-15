@@ -11,7 +11,6 @@
 #include <ctime>
 
 #include "fileHandler.h"
-#include "fileHandler.cpp"
 #include "Net.h"
 
 //#define SHOW_ACKS
