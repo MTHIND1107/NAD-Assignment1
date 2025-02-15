@@ -258,39 +258,39 @@ int main(int argc, char* argv[])
 		// Break the file into chunks of size `PacketSize` and send each chunk.
 		while (sendAccumulator > 1.0f / sendRate)
 		{
-			 
-			
-			switch (transferState) {
-			case idle:
-			case sendingMetadata:
-				transfer_start = clock();
-				size_t packetSize;
-				createMetadataPacket(argv[2], fileSize, computeCRC32(fileBuffer, fileSize), false, tempBuffer, &packetSize);
-				connection.SendPacket((unsigned char*)tempBuffer, packetSize);
-				transferState = sendingFile;
-				break;
+			if (mode == Server) {
 
-			case sendingFile:
-				if (currentOffset < fileSize) {
-					size_t packetSize = createDataPacket(fileBuffer, fileSize, currentOffset, tempBuffer, PacketSize, (currentOffset + PacketSize >= fileSize));
+				switch (transferState) {
+				case idle:
+				case sendingMetadata:
+					transfer_start = clock();
+					size_t packetSize;
+					createMetadataPacket(argv[2], fileSize, computeCRC32(fileBuffer, fileSize), false, tempBuffer, &packetSize);
 					connection.SendPacket((unsigned char*)tempBuffer, packetSize);
-					currentOffset += packetSize;
-					if (currentOffset >= fileSize) {
-						transfer_end = clock();
-						double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
-						double speed = calculateTransferSpeed(0, duration, fileSize);
-						printf("Transfer completed\n");
-						printf("File size: %zu bytes\n", fileSize);
-						printf("Time taken: %.2f seconds\n", duration);
-						printf("Transfer speed: %.2f Mbps\n", speed);
-						transferState = completed;
+					transferState = sendingFile;
+					break;
+
+				case sendingFile:
+					if (currentOffset < fileSize) {
+						size_t packetSize = createDataPacket(fileBuffer, fileSize, currentOffset, tempBuffer, PacketSize, (currentOffset + PacketSize >= fileSize));
+						connection.SendPacket((unsigned char*)tempBuffer, packetSize);
+						currentOffset += packetSize;
+						if (currentOffset >= fileSize) {
+							transfer_end = clock();
+							double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
+							double speed = calculateTransferSpeed(0, duration, fileSize);
+							printf("Transfer completed\n");
+							printf("File size: %zu bytes\n", fileSize);
+							printf("Time taken: %.2f seconds\n", duration);
+							printf("Transfer speed: %.2f Mbps\n", speed);
+							transferState = completed;
+						}
 					}
+					break;
+				default:
+					break;
 				}
-				break;
-			default:
-				break;
 			}
-			
 			sendAccumulator -= 1.0f / sendRate;
 		}
 
