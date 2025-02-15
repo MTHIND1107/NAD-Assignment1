@@ -316,7 +316,7 @@ int main(int argc, char* argv[])
 
 			// Server-Side: Handle receiving file metadata and file chunks
 			unsigned char packet[256];
-			transferState = receivingMetadata; ///Changed to make sure it goes in
+			//transferState = receivingMetadata; ///Changed to make sure it goes in
 			int bytesRead = connection.ReceivePacket(packet, sizeof(packet));
 			if (bytesRead <= 0)
 				break;
@@ -372,10 +372,6 @@ int main(int argc, char* argv[])
 								transferState = receivingMetadata;
 								continue;  // Restart loop safely
 							}
-							free(fileBuffer);
-							fileBuffer = nullptr;
-							currentOffset = 0;
-							transferState = receivingMetadata;
 						}
 					}
 					break;
