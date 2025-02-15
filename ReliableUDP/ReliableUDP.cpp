@@ -135,13 +135,13 @@ int main(int argc, char* argv[])
 	Address address;
 	//Tracks the file transfer states
 	enum TransferState {
-		idle,
+		
 		sendingMetadata,
 		sendingFile,
 		receivingMetadata,
 		receivingFile,
 		completed
-	} transferState = idle;
+	} transferState;
 
 	//Variables used in sending and receiving 
 	char* fileBuffer = nullptr;
@@ -192,15 +192,10 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if (mode == Client) {
-		printf("Client sending for connections...\n");
+	if (mode == Client)
 		connection.Connect(address);
-	}
-	else {
-		printf("Server starting on port %d...\n", ServerPort);
+	else
 		connection.Listen();
-		printf("Server listening for connections...\n");
-	}
 
 	bool connected = false;
 	float sendAccumulator = 0.0f;
@@ -264,37 +259,37 @@ int main(int argc, char* argv[])
 		while (sendAccumulator > 1.0f / sendRate)
 		{
 			 
-			if (mode == Client && connected) {
-				switch (transferState) {
-				case sendingMetadata:
-					transfer_start = clock();
-					size_t packetSize;
-					createMetadataPacket(argv[2], fileSize, computeCRC32(fileBuffer, fileSize), false, tempBuffer, &packetSize);
-					connection.SendPacket((unsigned char*)tempBuffer, packetSize);
-					transferState = sendingFile;
-					break;
+			
+			switch (transferState) {
+			case sendingMetadata:
+				transfer_start = clock();
+				size_t packetSize;
+				createMetadataPacket(argv[2], fileSize, computeCRC32(fileBuffer, fileSize), false, tempBuffer, &packetSize);
+				connection.SendPacket((unsigned char*)tempBuffer, packetSize);
+				transferState = sendingFile;
+				break;
 
-				case sendingFile:
-					if (currentOffset < fileSize) {
-						size_t packetSize = createDataPacket(fileBuffer, fileSize, currentOffset, tempBuffer, PacketSize, (currentOffset + PacketSize >= fileSize));
-						connection.SendPacket((unsigned char*)tempBuffer, packetSize);
-						currentOffset += packetSize;
-						if (currentOffset >= fileSize) {
-							transfer_end = clock();
-							double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
-							double speed = calculateTransferSpeed(0, duration, fileSize);
-							printf("Transfer completed\n");
-							printf("File size: %zu bytes\n", fileSize);
-							printf("Time taken: %.2f seconds\n", duration);
-							printf("Transfer speed: %.2f Mbps\n", speed);
-							transferState = completed;
-						}
+			case sendingFile:
+				if (currentOffset < fileSize) {
+					size_t packetSize = createDataPacket(fileBuffer, fileSize, currentOffset, tempBuffer, PacketSize, (currentOffset + PacketSize >= fileSize));
+					connection.SendPacket((unsigned char*)tempBuffer, packetSize);
+					currentOffset += packetSize;
+					if (currentOffset >= fileSize) {
+						transfer_end = clock();
+						double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
+						double speed = calculateTransferSpeed(0, duration, fileSize);
+						printf("Transfer completed\n");
+						printf("File size: %zu bytes\n", fileSize);
+						printf("Time taken: %.2f seconds\n", duration);
+						printf("Transfer speed: %.2f Mbps\n", speed);
+						transferState = completed;
 					}
-					break;
-				default:
-					break;
 				}
+				break;
+			default:
+				break;
 			}
+			
 			sendAccumulator -= 1.0f / sendRate;
 		}
 
@@ -312,7 +307,7 @@ int main(int argc, char* argv[])
 				break;
 			if (mode == Server) {
 				switch (transferState) {
-				case idle:
+				
 				case receivingMetadata:
 					if (extractMetadataPacket((char*)packet, &metadata)) {
 						transfer_start = clock();
