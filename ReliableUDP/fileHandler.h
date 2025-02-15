@@ -20,7 +20,7 @@ typedef struct {
     char filename[256];  // Adjust size as needed
     size_t fileSize;
     uint32_t crc;
-    bool isLast;
+    bool isLastPacket;
 } FileMetadata;
 
 void init_crc32_table(void);

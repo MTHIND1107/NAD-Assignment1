@@ -22,12 +22,7 @@
 #define POLYNOMIAL 0xEDB88320  // Standard CRC-32 polynomial
 
 
-struct FileMetadata {
-    char filename[256];
-    size_t fileSize;
-    uint32_t crc;
-    bool isLastPacket;
-};
+
 
 static uint32_t crc32_table[256];
 //MAKE SURE TO CITE THIS
