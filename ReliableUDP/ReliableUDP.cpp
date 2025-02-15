@@ -192,8 +192,10 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 
-	if (mode == Client)
+	if (mode == Client) {
+		printf("Client sending for connections...\n");
 		connection.Connect(address);
+	}
 	else {
 		printf("Server starting on port %d...\n", ServerPort);
 		connection.Listen();
