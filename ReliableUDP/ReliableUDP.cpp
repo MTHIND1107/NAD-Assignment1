@@ -136,13 +136,13 @@ int main(int argc, char* argv[])
 	Address address;
 	//Tracks the file transfer states
 	enum TransferState {
-		IDLE,
+		idle,
 		sendingMetadata,
 		sendingFile,
 		receivingMetadata,
 		receivingFile,
 		completed
-	} transferState = IDLE;
+	} transferState = idle;
 
 	//Variables used in sending and receiving 
 	char* fileBuffer = nullptr;
@@ -250,7 +250,7 @@ int main(int argc, char* argv[])
 						currentOffset += packetSize;
 
 						if (currentOffset >= fileSize) {
-							stopTransferTimer();
+							stopTransferTimer(); //TransferTimer issue while stopping
 							double speed = calculateTransferSpeed(fileSize);
 							printf("Transfer completed\n");
 							printf("File size: %zu bytes\n", fileSize);
@@ -259,8 +259,11 @@ int main(int argc, char* argv[])
 						}
 					}
 					break;
+				default:
+					break;
 				}
 			}
+			sendAccumulator -= 1.0f / sendRate;
 		}
 
 		while (true)
@@ -275,6 +278,52 @@ int main(int argc, char* argv[])
 			int bytes_read = connection.ReceivePacket(packet, sizeof(packet));
 			if (bytes_read == 0)
 				break;
+			if (mode == Server){
+				switch (transferState) {
+				case idle:
+				case receivingMetadata:
+					if (extractMetadataPacket((char*)packet, &metadata)) {
+						fileBuffer = (char*)malloc(metadata.fileSize);
+						currentOffset = 0;
+						transferState = receivingFile;
+						startTransferTimer();
+						printf("Receiving file: %s (Size: %zu bytes)\n", metadata.filename, metadata.fileSize);
+					}
+					break;
+				case receivingFile:
+					if (currentOffset + bytesRead <= metadata.fileSize) {
+						memcpy(fileBuffer + currentOffset, packet, bytesRead);
+						currentOffset += bytesRead;
+
+						if (currentOffset >= metadata.fileSize) {
+							stopTransferTimer();
+							uint32_t receivedCRC = computeCRC32(fileBuffer, metadata.fileSize);
+
+							if (receivedCRC == metadata.crc) {
+								char savePath[512];
+								snprintf(savePath, sizeof(savePath), "received_%s", metadata.filename);
+								if (saveFile(savePath, fileBuffer, metadata.fileSize) == 0) {
+									double speed = calculateTransferSpeed(metadata.fileSize);
+									printf("File received successfully\n");
+									printf("Saved as: %s\n", savePath);
+									printf("Transfer speed: %.2f Mbps\n", speed);
+									printf("CRC verification: PASSED\n");
+								}
+							}
+							else {
+								printf("CRC verification failed!\n");
+							}
+
+							free(fileBuffer);
+							fileBuffer = nullptr;
+							transferState = completed;
+						}
+					}
+					break;
+
+				default:
+					break;
+				}
 		}
 		// Write the received chunk to the output file.
 	   // Ensure that no data is lost or corrupted during the process.
