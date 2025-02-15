@@ -268,7 +268,7 @@ int main(int argc, char* argv[])
 						currentOffset += packetSize;
 						*/
 						size_t remainingSize = fileSize - currentOffset;
-						size_t chunkSize = std::min(remainingSize, (size_t)PacketSize);
+						size_t chunkSize = (remainingSize < (size_t)PacketSize) ? remainingSize : (size_t)PacketSize;
 						memcpy(tempBuffer, fileBuffer + currentOffset, chunkSize);
 						connection.SendPacket((unsigned char*)tempBuffer, chunkSize);
 						currentOffset += chunkSize;
