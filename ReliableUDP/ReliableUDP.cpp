@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <ctime>
+#include <algorithm>
 
 #include "fileHandler.h"
 #include "Net.h"
@@ -229,6 +230,9 @@ int main(int argc, char* argv[])
 		{
 			printf("client connected to server\n");
 			connected = true;
+			if (mode == Client) {
+				transfer_start = clock();
+			}
 			
 		}
 
@@ -237,20 +241,6 @@ int main(int argc, char* argv[])
 			printf("connection failed\n");
 			break;
 		}
-		if (mode == Client) {
-			static int lastState = -1;
-			int currentState = 0;
-			currentState |= connection.IsConnected() ? 1 : 0;
-			currentState |= connection.ConnectFailed() ? 2 : 0;
-
-			if (currentState != lastState) {
-				printf("Connection state changed:\n");
-				printf("IsConnected: %s\n", connection.IsConnected() ? "true" : "false");
-				printf("ConnectFailed: %s\n", connection.ConnectFailed() ? "true" : "false");
-				printf("Connected flag: %s\n", connected ? "true" : "false");
-				lastState = currentState;
-			}
-		}
 		// send and receive packets
 
 		sendAccumulator += DeltaTime;
@@ -258,23 +248,34 @@ int main(int argc, char* argv[])
 		// Break the file into chunks of size `PacketSize` and send each chunk.
 		while (sendAccumulator > 1.0f / sendRate)
 		{
-			if (mode == Client) {
+			if (mode == Client && connected) {
 
 				switch (transferState) {
 				case idle:
 				case sendingMetadata:
-					transfer_start = clock();
+					
 					size_t packetSize;
 					createMetadataPacket(argv[2], fileSize, computeCRC32(fileBuffer, fileSize), false, tempBuffer, &packetSize);
 					connection.SendPacket((unsigned char*)tempBuffer, packetSize);
+					printf("Sent metadata for file: %s\n", argv[2]);
 					transferState = sendingFile;
 					break;
 
 				case sendingFile:
 					if (currentOffset < fileSize) {
-						size_t packetSize = createDataPacket(fileBuffer, fileSize, currentOffset, tempBuffer, PacketSize, (currentOffset + PacketSize >= fileSize));
+						/*size_t packetSize = createDataPacket(fileBuffer, fileSize, currentOffset, tempBuffer, PacketSize, (currentOffset + PacketSize >= fileSize));
 						connection.SendPacket((unsigned char*)tempBuffer, packetSize);
 						currentOffset += packetSize;
+						*/
+						size_t remainingSize = fileSize - currentOffset;
+						size_t chunkSize = std::min(remainingSize, (size_t)PacketSize);
+						memcpy(tempBuffer, fileBuffer + currentOffset, chunkSize);
+						connection.SendPacket((unsigned char*)tempBuffer, chunkSize);
+						currentOffset += chunkSize;
+						float progress = (float)currentOffset / fileSize * 100.0f;
+						printf("\rSending progress: %.1f%%", progress);
+						fflush(stdout);
+
 						if (currentOffset >= fileSize) {
 							transfer_end = clock();
 							double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
@@ -311,11 +312,16 @@ int main(int argc, char* argv[])
 				
 				case receivingMetadata:
 					if (extractMetadataPacket((char*)packet, &metadata)) {
-						transfer_start = clock();
+						printf("Receiving file: %s (Size: %zu bytes)\n", metadata.filename, metadata.fileSize);
 						fileBuffer = (char*)malloc(metadata.fileSize);
+						if (!fileBuffer) {
+							printf("Failed to allocate memory for file\n");
+							return 1;
+						}
 						currentOffset = 0;
 						transferState = receivingFile;
-						printf("Receiving file: %s (Size: %zu bytes)\n", metadata.filename, metadata.fileSize);
+						transfer_start = clock();
+						//printf("Receiving file: %s (Size: %zu bytes)\n", metadata.filename, metadata.fileSize);
 					}
 					break;
 				case receivingFile:
@@ -325,15 +331,15 @@ int main(int argc, char* argv[])
 
 						if (currentOffset >= metadata.fileSize) {
 							transfer_end = clock();
-							double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
-							double speed = calculateTransferSpeed(0, duration, metadata.fileSize);
+							
 							uint32_t receivedCRC = computeCRC32(fileBuffer, metadata.fileSize);
 
 							if (receivedCRC == metadata.crc) {
 								char savePath[512];
 								snprintf(savePath, sizeof(savePath), "received_%s", metadata.filename);
 								if (saveFile(savePath, fileBuffer, metadata.fileSize) == 0) {
-									double speed = calculateTransferSpeed(transfer_start, transfer_end, fileSize);
+									double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
+									double speed = calculateTransferSpeed(0, duration, metadata.fileSize);
 									printf("File received successfully\n");
 									printf("Saved as: %s\n", savePath);
 									printf("File received in %.2f seconds\n", duration);
@@ -347,7 +353,8 @@ int main(int argc, char* argv[])
 
 							free(fileBuffer);
 							fileBuffer = nullptr;
-							transferState = completed;
+							currentOffset = 0;
+							transferState = receivingMetadata;
 						}
 					}
 					break;
