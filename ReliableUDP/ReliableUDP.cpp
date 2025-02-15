@@ -316,8 +316,9 @@ int main(int argc, char* argv[])
 
 			// Server-Side: Handle receiving file metadata and file chunks
 			unsigned char packet[256];
+			transferState = receivingMetadata; ///Changed to make sure it goes in
 			int bytesRead = connection.ReceivePacket(packet, sizeof(packet));
-			if (bytesRead == 0)
+			if (bytesRead <= 0)
 				break;
 			if (mode == Server) {
 				switch (transferState) {
@@ -363,10 +364,14 @@ int main(int argc, char* argv[])
 									printf("CRC verification: PASSED\n");
 								}
 							}
-							else {
+							if (receivedCRC != metadata.crc) {
 								printf("CRC verification failed!\n");
+								free(fileBuffer);
+								fileBuffer = nullptr;
+								currentOffset = 0;
+								transferState = receivingMetadata;
+								continue;  // Restart loop safely
 							}
-
 							free(fileBuffer);
 							fileBuffer = nullptr;
 							currentOffset = 0;
