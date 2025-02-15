@@ -11,6 +11,14 @@
 #define CHECKSUM_SIZE 4 // CRC32 produces 4-byte checksum
 #define POLYNOMIAL 0xEDB88320  // Standard CRC-32 polynomial
 
+
+struct FileMetadata {
+    char filename[256];
+    size_t fileSize;
+    uint32_t crc;
+    bool isLastPacket;
+};
+
 static uint32_t crc32_table[256];
 //MAKE SURE TO CITE THIS
 /*
@@ -100,20 +108,14 @@ double calculateTransferSpeed(double startTime, double endTime, size_t fileSize)
 
     return (fileSize * 8.0) / (duration * 1e6); // Convert to Mbps
 }
-struct FileMetadata {
-    char filename[256];
-    size_t fileSize;
-    uint32_t crc;
-    bool isLastPacket;
-};
 
 //Creating a metadata packet
-void createMetadataPacket(const char* filename, size_t fileSize, uint32_t crc, char* packet, size_t* packetSize) {
+void createMetadataPacket(const char* filename, size_t fileSize, uint32_t crc, bool isLast, char* packet, size_t* packetSize) {
     FileMetadata metadata;
     strncpy(metadata.filename, filename, sizeof(metadata.filename) - 1);
     metadata.fileSize = fileSize;
     metadata.crc = crc;
-    metadata.isLastPacket = false;
+    metadata.isLastPacket = isLast;
 
     memcpy(packet, &metadata, sizeof(FileMetadata));
     *packetSize = sizeof(FileMetadata);
