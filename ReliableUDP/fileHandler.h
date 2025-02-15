@@ -1,3 +1,12 @@
+/*
+ * FILE: fileHandler.h
+ * PROJECT: Reliable UDP File Transfer
+ * PROGRAMMER: Bhawanjeet & Manreet
+ * FIRST VERSION: 15/02/2025
+ * DESCRIPTION:
+ * This header file declares functions for file handling operations, including
+ * loading, saving, metadata management, and integrity verification.
+ */
 #ifndef FILE_HANDLER_H
 #define FILE_HANDLER_H
 #pragma once

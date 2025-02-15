@@ -1,3 +1,13 @@
+/*
+ * FILE: fileHandler.cpp
+ * PROJECT: Reliable UDP File Transfer
+ * PROGRAMMER: Manreet & Bhawanjeet
+ * FIRST VERSION: 15/02/2025
+ * DESCRIPTION:
+ * This source file implements file handling functions for the Reliable UDP
+ * file transfer system. It includes functions to read and write files, generate
+ * metadata packets, and perform integrity verification using CRC32.
+ */
 #include "fileHandler.h"
 #include <stdio.h>
 #include <stdlib.h>
