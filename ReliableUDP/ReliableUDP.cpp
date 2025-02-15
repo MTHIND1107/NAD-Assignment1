@@ -252,9 +252,9 @@ int main(int argc, char* argv[])
 
 				switch (transferState) {
 				case idle:
-				case sendingMetadata:
-					
-					
+				case sendingMetadata: {
+
+
 					size_t totalMetadataSize = sizeof(FileMetadata);
 					size_t currentMetaOffset = 0;
 					while (currentMetaOffset < totalMetadataSize) {
@@ -265,6 +265,7 @@ int main(int argc, char* argv[])
 					}
 					printf("Sent metadata for file: %s\n", argv[2]);
 					transferState = sendingFile;
+				}
 					break;
 
 				case sendingFile:
@@ -321,7 +322,7 @@ int main(int argc, char* argv[])
 			if (mode == Server) {
 				switch (transferState) {
 				
-				case receivingMetadata:
+				case receivingMetadata: {
 					static char metadataBuffer[sizeof(FileMetadata)];
 					static size_t receivedMetaOffset = 0;
 
@@ -337,6 +338,7 @@ int main(int argc, char* argv[])
 						currentOffset = 0;
 						transferState = receivingFile;
 					}
+				}
 					break;
 				case receivingFile:
 					if (currentOffset + bytesRead <= metadata.fileSize) {
