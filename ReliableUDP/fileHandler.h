@@ -15,6 +15,6 @@ int SendFile(const char* filename, const char* destIP, int destPort);
 
 int ReceiveFile(const char* outputFilename, int listenPort);
 
-int VerifyFile(void);
+bool VerifyFile(const char* filename, uint32_t expectedCRC);
 
 #endif
