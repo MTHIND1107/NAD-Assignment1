@@ -20,20 +20,16 @@
 #define PACKET_SIZE 1024
 #define CHECKSUM_SIZE 4 // CRC32 produces 4-byte checksum
 #define POLYNOMIAL 0xEDB88320  // Standard CRC-32 polynomial
+const int size = 256;
 
 
 
+static uint32_t crc32_table[size];
+//
+//Source: https://gist.github.com/timepp/1f678e200d9e0f2a043a9ec6b3690635
 
-static uint32_t crc32_table[256];
-//MAKE SURE TO CITE THIS
-/*
-* Name: init_crc32_table
-* Parameteres: None
-* Returns: Nothing
-* Description: Initialized the CRC table
-*/
 void init_crc32_table(void) {
-    for (uint32_t i = 0; i < 256; i++) {
+    for (uint32_t i = 0; i < size; i++) {
         uint32_t crc = i;
         for (int j = 0; j < 8; j++) {
             crc = (crc >> 1) ^ (crc & 1 ? POLYNOMIAL : 0);
@@ -41,12 +37,7 @@ void init_crc32_table(void) {
         crc32_table[i] = crc;
     }
 }
-/*
-* Name: compute_crc32
-* Parameteres: const uint8_t* data, size_t length
-* Returns: uint32_t
-* Description: compute the CRC32 using table
-*/
+
 uint32_t computeCRC32(const char* data, size_t size) {
     uint32_t crc = 0xFFFFFFFF;
     for (size_t i = 0; i < size; ++i) {
@@ -123,17 +114,9 @@ void createMetadataPacket(const char* filename, size_t fileSize, uint32_t crc, b
     metadata.isLastPacket = isLast;
 
     size_t totalMetadataSize = sizeof(FileMetadata);
-
-    // Calculate remaining size to send
     size_t remainingSize = totalMetadataSize - offset;
-
-    // Determine chunk size (must fit in `PacketSize`)
-    size_t chunkSize = (remainingSize < 256) ? remainingSize : 256; ///REMOVE THE HARD CODED VLAUE
-
-    // Copy only the chunked portion into the packet
+    size_t chunkSize = (remainingSize < size) ? remainingSize : size;
     memcpy(packet, ((char*)&metadata) + offset, chunkSize);
-
-    // Set packet size
     *packetSize = chunkSize;
 }
 //Get the metadata packet
@@ -146,9 +129,9 @@ bool extractMetadataPacket(const char* packet, size_t bytesRead, FileMetadata* m
 
     // Check if we have received the full metadata structure
     if (*receivedMetaOffset >= sizeof(FileMetadata)) {
-        memcpy(metadata, metadataBuffer, sizeof(FileMetadata)); // Copy full metadata
-        *receivedMetaOffset = 0; // Reset for next file transfer
-        return true; // Metadata fully received
+        memcpy(metadata, metadataBuffer, sizeof(FileMetadata));
+        *receivedMetaOffset = 0;
+        return true;
     }
     return false;
 }

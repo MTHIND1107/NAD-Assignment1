@@ -317,7 +317,7 @@ int main(int argc, char* argv[])
 			// Server-Side: Handle receiving file metadata and file chunks
 			unsigned char packet[256];
 			//transferState = receivingMetadata; ///Changed to make sure it goes in
-			int bytesRead = connection.ReceivePacket(packet, sizeof(packet));
+			int bytesRead = connection.ReceivePacket(packet, sizeof(FileMetadata));
 			if (bytesRead <= 0)
 				break;
 			if (mode == Server) {
@@ -425,7 +425,7 @@ int main(int argc, char* argv[])
 
 			statsAccumulator -= 0.25f;
 		}
-		//SOMEWHERE HERE TO USE AND DISPLAY THE TIME FUNCTION
+		
 		net::wait(DeltaTime);
 	}
 	if (fileBuffer) {
