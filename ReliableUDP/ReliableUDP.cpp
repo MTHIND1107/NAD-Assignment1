@@ -285,7 +285,7 @@ int main(int argc, char* argv[])
 						connection.SendPacket((unsigned char*)tempBuffer, chunkSize);
 						currentOffset += chunkSize;
 						float progress = (float)currentOffset / fileSize * 100.0f;
-						printf("\rSending progress: %.1f%%", progress);
+						printf("\rSending progress: %.2f%%", progress);
 						fflush(stdout);
 
 						if (currentOffset >= fileSize) {
