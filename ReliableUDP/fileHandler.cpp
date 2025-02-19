@@ -98,12 +98,23 @@ int saveFile(const char* filename, const char* buffer, size_t size)
 // Calculate transfer speed in Mbps
 double calculateTransferSpeed(double startTime, double endTime, size_t fileSize)
 {
-    double duration = (double)(endTime - startTime); // Convert to seconds
-    if (duration <= 0) return 0.0; // Prevent division by zero
+    double duration = endTime - startTime; // Time difference in seconds
 
-    return (fileSize * 8.0) / (duration * 1e6); // Convert to Mbps
+    // Debugging prints to check values
+    printf("Start Time: %.6f, End Time: %.6f, Duration: %.6f\n", startTime, endTime, duration);
+
+    if (duration <= 0.0) {
+        printf("Error: Invalid duration (%.6f seconds)\n", duration);
+        return 0.0;  // Prevent division by zero or negative speeds
+    }
+
+    // Convert bytes to bits and calculate speed in Mbps
+    double speed = (fileSize * 8.0) / (duration * 1e6); // Convert to Mbps
+
+    printf("File Size: %zu bytes, Transfer Speed: %.2f Mbps\n", fileSize, speed);
+
+    return speed;
 }
-
 //Creating a metadata packet
 void createMetadataPacket(const char* filename, size_t fileSize, uint32_t crc, bool isLast, char* packet, size_t* packetSize, size_t offset) {
     FileMetadata metadata;
