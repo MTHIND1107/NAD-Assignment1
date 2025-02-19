@@ -1,0 +1,38 @@
+Timer - Handles creation of background threads
+      - submit the task to run
+
+
+Timer Task (Runnable)
+      - has run() method
+      - run () executes on Background thread
+
+      Runnable - run()
+      Callable - call()
+
+
+API Endpoints
+    - returns xml
+    - returns json
+    - Call the endpoint in the Background Thread
+    - Parse the data 
+       Gson - json Parsing
+       json -> Parser -> JAVA OBJECT
+
+Thread Factory
+    - creates w threads
+
+Executor Service
+    - manages the thread pool
+    - submit the task to run on this port
+
+Read Feed Task (xml)
+parsing the xml
+
+Download feed task
+-calls the API
+
+Input Stream - reads from the endpoint (url)
+Output Stream - write the data from endpoint to a file. 
+
+My Task :Callable 
+- Thread Factory, Executor Service 

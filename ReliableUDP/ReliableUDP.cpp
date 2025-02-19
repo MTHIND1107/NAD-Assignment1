@@ -294,7 +294,7 @@ int main(int argc, char* argv[])
 						if (currentOffset >= fileSize) {
 							transfer_end = clock();
 							double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
-							double speed = calculateTransferSpeed(0, duration, fileSize);
+							double speed = calculateTransferSpeed(transfer_start, transfer_end, fileSize);
 							printf("Transfer completed\n");
 							printf("File size: %zu bytes\n", fileSize);
 							printf("Time taken: %.2f seconds\n", duration);
@@ -359,7 +359,7 @@ int main(int argc, char* argv[])
 								snprintf(savePath, sizeof(savePath), "received_%s", metadata.filename);
 								if (saveFile(savePath, fileBuffer, metadata.fileSize) == 0) {
 									double duration = (double)(transfer_end - transfer_start) / CLOCKS_PER_SEC;
-									double speed = calculateTransferSpeed(0, duration, metadata.fileSize);
+									double speed = calculateTransferSpeed(transfer_start, transfer_end, metadata.fileSize);
 									printf("File received successfully\n");
 									printf("Saved as: %s\n", savePath);
 									printf("File received in %.2f seconds\n", duration);
