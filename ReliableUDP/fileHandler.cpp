@@ -111,7 +111,9 @@ double calculateTransferSpeed(double startTime, double endTime, size_t fileSize)
     // Convert bytes to bits and calculate speed in Mbps
     double speed = (fileSize * 8.0) / (duration * 1e6); // Convert to Mbps
 
-    printf("File Size: %zu bytes, Transfer Speed: %.2f Mbps\n", fileSize, speed);
+    // Additional debugging to show intermediate results
+    printf("File Size: %zu bytes, Speed in bits/sec: %.2f\n", fileSize, (fileSize * 8.0) / duration);
+    printf("Transfer Speed: %.2f Mbps\n", speed);
 
     return speed;
 }
