@@ -177,6 +177,9 @@ int main(int argc, char* argv[])
 			return 1;
 		}
 	}
+	else {
+		transferState = receivingMetadata;
+	}
 	if (!InitializeSockets())
 	{
 		printf("failed to initialize sockets\n");
