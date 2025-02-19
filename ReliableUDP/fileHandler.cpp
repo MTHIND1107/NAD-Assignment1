@@ -96,9 +96,9 @@ int saveFile(const char* filename, const char* buffer, size_t size)
     return (written == size) ? 0 : -1;
 }
 // Calculate transfer speed in Mbps
-double calculateTransferSpeed(clock_t startTime, clock_t endTime, size_t fileSize)
+double calculateTransferSpeed(double startTime, double endTime, size_t fileSize)
 {
-    double duration = (double)(endTime - startTime) / CLOCKS_PER_SEC; // Convert to seconds
+    double duration = (double)(endTime - startTime); // Convert to seconds
     if (duration <= 0) return 0.0; // Prevent division by zero
 
     return (fileSize * 8.0) / (duration * 1e6); // Convert to Mbps
