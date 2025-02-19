@@ -1,4 +1,3 @@
-#pragma once
 /*
 	Simple Network Library from "Networking for Game Programmers"
 	http://www.gaffer.org/networking-for-game-programmers
@@ -49,7 +48,7 @@
 #include <algorithm>
 #include <functional>
 
-const int PacketSizeHack = 384;
+const int PacketSizeHack = 256 + 128;
 
 namespace net
 {
@@ -962,41 +961,35 @@ namespace net
 
 		// overriden functions from "Connection"
 
-		virtual bool SendPacket(const unsigned char data[], int PacketSizeHack) override
+		bool SendPacket(const unsigned char data[], int size)
 		{
 #ifdef NET_UNIT_TEST
 			if (reliabilitySystem.GetLocalSequence() & packet_loss_mask)
 			{
-				reliabilitySystem.PacketSent(PacketSizeHack);
+				reliabilitySystem.PacketSent(size);
 				return true;
 			}
 #endif
 			const int header = 12;
-			static int packetCounter = 0;
-			char message[256];
-			snprintf(message, sizeof(message), "Hello World <<%d>>", packetCounter++);
-			size_t messageSize = strlen(message);
-			//unsigned char packet[header + PacketSizeHack];
-			std::vector<unsigned char> packet(header + messageSize);
+			unsigned char packet[header + PacketSizeHack];
 			unsigned int seq = reliabilitySystem.GetLocalSequence();
 			unsigned int ack = reliabilitySystem.GetRemoteSequence();
 			unsigned int ack_bits = reliabilitySystem.GenerateAckBits();
-			WriteHeader(&packet[0], seq, ack, ack_bits);
-			std::memcpy(&packet[header], message, messageSize);
-			if (!Connection::SendPacket(&packet[0], header + messageSize))
+			WriteHeader(packet, seq, ack, ack_bits);
+			std::memcpy(packet + header, data, size);
+			if (!Connection::SendPacket(packet, size + header))
 				return false;
-			reliabilitySystem.PacketSent(messageSize);
+			reliabilitySystem.PacketSent(size);
 			return true;
 		}
 
-		virtual int ReceivePacket(unsigned char data[], int PacketSizeHack) override
+		int ReceivePacket(unsigned char data[], int size)
 		{
 			const int header = 12;
-			if (PacketSizeHack <= header)
+			if (size <= header)
 				return false;
-			//unsigned char packet[header + PacketSizeHack];
-			std::vector<unsigned char> packet(header + PacketSizeHack);
-			int received_bytes = Connection::ReceivePacket(&packet[0], PacketSizeHack + header);
+			unsigned char packet[header + PacketSizeHack];
+			int received_bytes = Connection::ReceivePacket(packet, size + header);
 			if (received_bytes == 0)
 				return false;
 			if (received_bytes <= header)
@@ -1004,15 +997,10 @@ namespace net
 			unsigned int packet_sequence = 0;
 			unsigned int packet_ack = 0;
 			unsigned int packet_ack_bits = 0;
-			ReadHeader(&packet[0], packet_sequence, packet_ack, packet_ack_bits); // Extract header information
-			// Notify reliability system about the received packet
+			ReadHeader(packet, packet_sequence, packet_ack, packet_ack_bits);
 			reliabilitySystem.PacketReceived(packet_sequence, received_bytes - header);
 			reliabilitySystem.ProcessAck(packet_ack, packet_ack_bits);
-			// Extract the message from the packet
-			std::memcpy(data, &packet[0] + header, received_bytes - header);
-			data[received_bytes - header] = '\0';  // Null-terminate the string...added for testing Hello World
-			// Print the received message
-			printf("Received Packet: %s\n", data);
+			std::memcpy(data, packet + header, received_bytes - header);
 			return received_bytes - header;
 		}
 
